@@ -1,4 +1,4 @@
-import { PersistentSet } from "near-sdk-as";
+import { PersistentSet, PersistentUnorderedMap } from "near-sdk-as";
 
 @nearBindgen
 export class Device {
@@ -23,6 +23,10 @@ export class Device {
     }
     getArgs(): string {
         return "{}";
+    }
+
+    hasAccess(accountId: string): bool {
+        return this.allowedUsers.has(accountId) || accountId == this.ownerId;
     }
 }
 
@@ -83,3 +87,8 @@ export class Oximeter extends Device {
         return "{bpm:" + this.bpm.toString() + ",spo2:" + this.spo2.toString() + "}";
     }
 }
+
+export let devicesRegistry = new PersistentUnorderedMap<string, Device>("d");
+export let oximeterRegistry = new PersistentUnorderedMap<string, Oximeter>("o");
+export let healthTrackerRegistry = new PersistentUnorderedMap<string, HealthTracker>("h");
+

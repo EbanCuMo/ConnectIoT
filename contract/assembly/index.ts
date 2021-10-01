@@ -1,12 +1,16 @@
 import { Context, logging, storage } from 'near-sdk-as';
-import { Device, HealthTracker, Oximeter } from './model';
+import { Device, HealthTracker, Oximeter, devicesRegistry, oximeterRegistry, healthTrackerRegistry } from './model';
 
 /*
 * Validate a json against a device in th blockchain returning its type
 */
-export function validateData(deviceId: string, jsonArgs: string): string | null {
+export function validateData(deviceId: string, deviceType: string, jsonArgs: string): string | null {
   const accountId = Context.sender;
-  var targetDevice = storage.get<Device>(deviceId);
+  var targetDevice = deviceType == "HealthTracker"
+    ? healthTrackerRegistry.get(deviceId)
+    : deviceType == "Oximeter"
+      ? oximeterRegistry.get(deviceId)
+      : devicesRegistry.get(deviceId);
 
   if (targetDevice == null) {
     return null;
@@ -25,35 +29,31 @@ export function validateData(deviceId: string, jsonArgs: string): string | null 
 /*
 * Get a device state, If the user is authorized returns the state, if not returns null
 */
-export function getState(deviceId: string): string | null {
+export function getState(deviceId: string, deviceType: string): string | null {
   const accountId = Context.sender;
-  var targetDevice = storage.get<Device>(deviceId);
+  var targetDevice = deviceType == "HealthTracker"
+    ? healthTrackerRegistry.get(deviceId)
+    : deviceType == "Oximeter"
+      ? oximeterRegistry.get(deviceId)
+      : devicesRegistry.get(deviceId);
 
   if (targetDevice == null) {
     return "Device not found";
   }
 
-  if (!targetDevice.allowedUsers) {
-    return "not alllowed users";
-  }
-  if (!targetDevice.ownerId) {
-    return "not ownerId";
-  }
-
-  var isAllowed: bool = targetDevice.allowedUsers.has(accountId) ||
-    accountId == targetDevice.ownerId;
+  var isAllowed: bool = targetDevice.hasAccess(accountId);
 
   if (!isAllowed) {
     return "Unauthorized";
   }
 
   if (targetDevice.deviceType == "Oximeter") {
-    var oximeter = storage.get<Oximeter>(deviceId);
+    var oximeter = devicesRegistry.get(deviceId);
     if (oximeter != null) {
       return oximeter.getArgs();
     }
   } else if (targetDevice.deviceType == "HealthTracker") {
-    var healthTracker = storage.get<HealthTracker>(deviceId);
+    var healthTracker = devicesRegistry.get(deviceId);
     if (healthTracker != null) {
       return healthTracker.getArgs();
     }
@@ -70,13 +70,18 @@ export function setState(
   deviceType: string,
   timestamp: string,
   args: Map<string, i32>): string | null {
-  var targetDevice = storage.get<Device>(deviceId);
+  var targetDevice = deviceType == "HealthTracker"
+    ? healthTrackerRegistry.get(deviceId)
+    : deviceType == "Oximeter"
+      ? oximeterRegistry.get(deviceId)
+      : devicesRegistry.get(deviceId);
+
   if (targetDevice != null) {
     return "Device already exists";
   }
 
   if (deviceType == "HealthTracker") {
-    storage.set(deviceId, new HealthTracker(
+    healthTrackerRegistry.set(deviceId, new HealthTracker(
       ownerId,
       deviceId,
       deviceType,
@@ -87,7 +92,7 @@ export function setState(
       args.get("muscleMass")));
     return "HealthTracker Registered";
   } else if (deviceType == "Oximeter") {
-    storage.set(deviceId, new Oximeter(
+    oximeterRegistry.set(deviceId, new Oximeter(
       ownerId,
       deviceId,
       deviceType,
@@ -96,7 +101,7 @@ export function setState(
       args.get("spo2")));
     return "Oximeter Registered";
   } else {
-    storage.set(deviceId, new Device(
+    devicesRegistry.set(deviceId, new Device(
       ownerId,
       deviceId,
       deviceType,
@@ -110,10 +115,15 @@ export function setState(
 */
 export function updateState(
   deviceId: string,
+  deviceType: string,
   timestamp: string,
   args: Map<string, i32>): string | null {
   const accountId = Context.sender;
-  var targetDevice = storage.get<Device>(deviceId);
+  var targetDevice = deviceType == "HealthTracker"
+    ? healthTrackerRegistry.get(deviceId)
+    : deviceType == "Oximeter"
+      ? oximeterRegistry.get(deviceId)
+      : devicesRegistry.get(deviceId);
 
   if (targetDevice == null) {
     return "Device not found";
@@ -125,14 +135,14 @@ export function updateState(
 
   targetDevice.timestamp = timestamp;
   if (targetDevice.deviceType == "Oximeter") {
-    var oximeter = storage.get<Oximeter>(deviceId);
+    var oximeter = oximeterRegistry.get(deviceId);
     if (oximeter == null) {
       return "Type Error";
     }
     oximeter.bpm = args.get("bpm");
     oximeter.spo2 = args.get("spo2");
   } else if (targetDevice.deviceType == "HealthTracker") {
-    var healthTracker = storage.get<HealthTracker>(deviceId);
+    var healthTracker = healthTrackerRegistry.get(deviceId);
     if (healthTracker == null) {
       return "Type Error";
     }
@@ -148,14 +158,18 @@ export function updateState(
 /*
 * An user can request authorization on a device.
 */
-export function askForPermission(deviceId: string): void {
+export function askForPermission(deviceId: string, deviceType: string): void {
   const requesterId = Context.sender;
 
   logging.log(
     'User: "' + requesterId + '" asking for permission to "' + deviceId + '"'
   )
 
-  var targetDevice = storage.get<Device>(deviceId);
+  var targetDevice = deviceType == "HealthTracker"
+    ? healthTrackerRegistry.get(deviceId)
+    : deviceType == "Oximeter"
+      ? oximeterRegistry.get(deviceId)
+      : devicesRegistry.get(deviceId);
   if (targetDevice == null) {
     return;
   }
@@ -166,8 +180,12 @@ export function askForPermission(deviceId: string): void {
 /*
 * The device owner can authorise a user on a device
 */
-export function authenticate(deviceId: string, accountId: string): bool {
-  var targetDevice = storage.get<Device>(deviceId);
+export function authenticate(deviceId: string, deviceType: string, accountId: string): bool {
+  var targetDevice = deviceType == "HealthTracker"
+    ? healthTrackerRegistry.get(deviceId)
+    : deviceType == "Oximeter"
+      ? oximeterRegistry.get(deviceId)
+      : devicesRegistry.get(deviceId);
   const currentUser = Context.sender;
 
   if (targetDevice == null || currentUser != targetDevice.ownerId) {
@@ -186,17 +204,21 @@ export function authenticate(deviceId: string, accountId: string): bool {
 /*
 * Deletes a device if the owner calls it
 */
-export function deleteDevice(deviceId: string): bool {
+export function deleteDevice(deviceId: string, deviceType: string): bool {
   const accountId = Context.sender;
-  var targetDevice = storage.get<Device>(deviceId);
+  var targetDevice = deviceType == "HealthTracker"
+    ? healthTrackerRegistry.get(deviceId)
+    : deviceType == "Oximeter"
+      ? oximeterRegistry.get(deviceId)
+      : devicesRegistry.get(deviceId);
 
-  /*if (targetDevice == null) {
+  if (targetDevice == null) {
     return false;
-  }*/
+  }
 
-  /*if (accountId != targetDevice.ownerId) {
+  if (accountId != targetDevice.ownerId) {
     return false;
-  }*/
+  }
 
   storage.delete(deviceId);
 
