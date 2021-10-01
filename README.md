@@ -13,7 +13,7 @@
    7. validar el tipo de dispositivo de acuerdo a los datos que arroja
    8. ver las solicitudes de acceso
 
-#🏁Prerrequisitos
+🏁Prerrequisitos
 1. node.js >=12 instalado (https://nodejs.org)
 2. yarn instalado
     ```bash
@@ -79,7 +79,7 @@ near call CONTRACT_ACCOUNT_ID deleteDevice'{"deviceId":"myOximeter","deviceType"
 
 ### Autenticar usuarios que quieren entrar al dispositivo
 ```bash
-near call CONTRACT_ACCOUNT_ID authenticate '{"deviceId": "myOximeter","deviceType": "Oximeter","accountId": "YOUR_ACCOUNT_ID"}' --accountId OWNER_COOUNT_ID
+near call CONTRACT_ACCOUNT_ID authenticate '{"deviceId": "myOximeter","deviceType": "Oximeter","accountId": "ACCOUNT_ID"}' --accountId OWNER_COOUNT_ID
 ```
 ### Pedir permiso para acceder a un dispositivo
 ```bash
