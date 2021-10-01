@@ -95,6 +95,6 @@ near call CONTRACT_ACCOUNT_ID validateData '{"deviceId": "myOximeter","deviceTyp
 near call CONTRACT_ACCOUNT_ID getRequests '{"deviceId": "myOximeter","deviceType": "Oximeter"}' --accountId OWNER_ACOUNT_ID
 ```
 
-# Caso de uso: ConnectIoT ayudará mucho al sector médico y a los servicios que ofrecen, ya que con este smart contract se puede acceder a los datos continuos qur toman los Smart Devices de los pacientes. Con esto los Médicos podrán saber niveles de oxigenación, temperatura, peso, hidratación, actividad fisica minima, entre muchos más. Con esto los servicios médicos podran atacar de manera más eficiente a los problemas que se enfrenten y tendran todo un registro de datos validados y reales de sus pacientes.
+### Caso de uso: ConnectIoT ayudará mucho al sector médico y a los servicios que ofrecen, ya que con este smart contract se puede acceder a los datos continuos qur toman los Smart Devices de los pacientes. Con esto los Médicos podrán saber niveles de oxigenación, temperatura, peso, hidratación, actividad fisica minima, entre muchos más. Con esto los servicios médicos podran atacar de manera más eficiente a los problemas que se enfrenten y tendran todo un registro de datos validados y reales de sus pacientes.
 
 Los diseños de esta aplicación se pueden ver en el siguiente link: https://marvelapp.com/project/5880174
