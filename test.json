@@ -1,0 +1,27 @@
+[
+    {
+        "device_id": 1,
+        "timestamp": "29-Sep-2021",
+        "hash": "sadasqe28732grd932hrn",
+        "args": {}
+    },
+    {
+        "device_id": 1,
+        "timestamp": "29-Sep-2021",
+        "hash": "sadasqe28732grd932hrn",
+        "args": {
+            "water": 98,
+            "temp": 36,
+            "..": ".."
+        }
+    },
+    {
+        "device_id": 1,
+        "timestamp": "29-Sep-2021",
+        "hash": "sadasqe28732grd932hrn",
+        "args": {
+            "bpm": 70,
+            "spo2": 99
+        }
+    }
+]
