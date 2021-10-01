@@ -1,101 +1,100 @@
-connectiot
+# 🚧 connectiot
 ==================
+> Proyecto realizado para el NCD Bootcamp NEAR Hispano.
+# ConnectIoT es un servicio que nos permite tener acceso, por medio de la blockchain ,a diferentes dispositivos IoT y monitorearlos de acuerdo a los datos que se de van tomando con el tiempo
 
-This app was initialized with [create-near-app]
+# ConnectIoT permite realizar las siguientes operaciones:
+   *_crear nuevos dispositivos 
+   *_cambiar argumentos de los dispositivos ya creados
+   *_ver el tipo de dispositivo
+   *_borrar dispositivos 
+   *_autenticar usuarios que quieran ingresar a los dispositivos
+   *_pedir permiso para entrar a un dispositivo
+   *_validar el tipo de dispositivo de acuerdo a los datos que arroja
+   *_ver las solicitudes de acceso
 
-
-Quick Start
-===========
-
-To run this project locally:
-
-1. Prerequisites: Make sure you've installed [Node.js] ≥ 12
-2. Install dependencies: `yarn install`
-3. Run the local development server: `yarn dev` (see `package.json` for a
-   full list of `scripts` you can run with `yarn`)
-
-Now you'll have a local development environment backed by the NEAR TestNet!
-
-Go ahead and play with the app and the code. As you make code changes, the app will automatically reload.
-
-
-Exploring The Code
-==================
-
-1. The "backend" code lives in the `/contract` folder. See the README there for
-   more info.
-2. The frontend code lives in the `/src` folder. `/src/index.html` is a great
-   place to start exploring. Note that it loads in `/src/index.js`, where you
-   can learn how the frontend connects to the NEAR blockchain.
-3. Tests: there are different kinds of tests for the frontend and the smart
-   contract. See `contract/README` for info about how it's tested. The frontend
-   code gets tested with [jest]. You can run both of these at once with `yarn
-   run test`.
-
-
-Deploy
-======
-
-Every smart contract in NEAR has its [own associated account][NEAR accounts]. When you run `yarn dev`, your smart contract gets deployed to the live NEAR TestNet with a throwaway account. When you're ready to make it permanent, here's how.
-
-
-Step 0: Install near-cli (optional)
--------------------------------------
-
-[near-cli] is a command line interface (CLI) for interacting with the NEAR blockchain. It was installed to the local `node_modules` folder when you ran `yarn install`, but for best ergonomics you may want to install it globally:
-
+#🏁Prerrequisitos
+1. node.js >=12 instalado (https://nodejs.org)
+2. yarn instalado
+    ```bash
+    npm install --global yarn
+    ```
+3. instalar dependencias
+    ```bash
+    yarn install --frozen-lockfile
+    ```
+4. crear una cuenta de NEAR en [testnet](https://docs.near.org/docs/develop/basics/create-account#creating-a-testnet-account)   
+5. instalar NEAR CLI
+    ```bash
     yarn install --global near-cli
+    ```
+6. autorizar app para dar acceso a la cuenta de NEAR
+    ```bash
+    near login
+     ```
 
-Or, if you'd rather use the locally-installed version, you can prefix all `near` commands with `npx`
+🐑 Clonar el Repositorio
+```bash
+git clone https://github.com/EbanCuMo/ConnectIoT
+cd ConnectIoT
+```
 
-Ensure that it's installed with `near --version` (or `npx near --version`)
+🏗 instalar y compilar el contrato
+```bash
+    yarn install
+    yarn build:contract:debug
+```
 
+🚀 Deployar el contrato
+```bash
+yarn dev:deploy:contract
+```
 
-Step 1: Create an account for the contract
-------------------------------------------
+🚂 Correr comandos
+Una vez deployado el contrato, usaremos el Account Id devuelto por la operacion para ejecutar los comandos, que será el account 
+Id del contrato [será utilizado como CONTRACT_ACCOUNT_ID en los ejemplos de comandos]
 
-Each account on NEAR can have at most one contract deployed to it. If you've already created an account such as `your-name.testnet`, you can deploy your contract to `connectiot.your-name.testnet`. Assuming you've already created an account on [NEAR Wallet], here's how to create `connectiot.your-name.testnet`:
+Utilizaremos OWNER_ACCOUNT_ID para identificar el account Id que utilizamos para ser dueños de un dispositivo.
+Utilizaremos YOUR_ACCOUNT_ID para identificar el account Id que utilizamos para solicitar acceso a un dispositivo.
 
-1. Authorize NEAR CLI, following the commands it gives you:
+### Crear Dispositivo Nuevo
+```bash
+near call CONTRACT_ACCOUNT_ID setState '{"ownerId": "OWNER_ACCOUNT_ID","deviceId": "myOximeter","deviceType": "Oximeter","timestamp": "Thu Sep 30 2021 20:09:33 GMT-0500","args": {"bpm":75,"spo2":99}}' --accountId OWNER_ACCOUNT_ID
+```
 
-      near login
+### Cambiar argumentos de un dispositivo
+```bash
+near call CONTRACT_ACCOUNT_ID updateState '{"deviceId":"myOximeter","deviceType": "Oximeter","timestamp": "Thu Sep 30 2021 20:09:33 GMT-0500","args": {"bpm":70,"spo2":98}}' --accountId OWNER_ACCOUNT_ID
+```
 
-2. Create a subaccount (replace `YOUR-NAME` below with your actual account name):
+### Ver arguementos de dispositivo
+```bash
+near call CONTRACT_ACCOUNT_ID getState '{"deviceId":"myOximeter","deviceType": "Oximeter"}' --accountId OWNER_ACCOUNT_ID
+```
 
-      near create-account connectiot.YOUR-NAME.testnet --masterAccount YOUR-NAME.testnet
+### Borrar un dispositivo
+```bash
+near call CONTRACT_ACCOUNT_ID deleteDevice'{"deviceId":"myOximeter","deviceType": "Oximeter"}' --accountId OWNER_ACCOUNT_ID
+```
 
+### Autenticar usuarios que quieren entrar al dispositivo
+```bash
+near call CONTRACT_ACCOUNT_ID authenticate '{"deviceId": "myOximeter","deviceType": "Oximeter","accountId": "YOUR_ACCOUNT_ID"}' --accountId OWNER_COOUNT_ID
+```
+### Pedir permiso para acceder a un dispositivo
+```bash
+near call CONTRACT_ACCOUNT_ID askForPermission '{"deviceId": "myOximeter","deviceType": "Oximeter"}' --accountId YOUR_ACCOUNT_ID
+```
 
-Step 2: set contract name in code
----------------------------------
+### Validar tipo de dispositivo de acuerdo a sus argumentos
+```bash
+near call CONTRACT_ACCOUNT_ID validateData '{"deviceId": "myOximeter","deviceType": "Oximeter","jsonArgs": "{bpm:70,spo2:98}"}' --accountId OWNER_ACCOUNT_ID
+```
+### Ver solicitudes de acceso
+```bash
+near call CONTRACT_ACCOUNT_ID getRequests '{"deviceId": "myOximeter","deviceType": "Oximeter"}' --accountId OWNER_ACOUNT_ID
+```
 
-Modify the line in `src/config.js` that sets the account name of the contract. Set it to the account id you used above.
+# Caso de uso: ConnectIoT ayudará mucho al sector médico y a los servicios que ofrecen, ya que con este smart contract se puede acceder a los datos continuos qur toman los Smart Devices de los pacientes. Con esto los Médicos podrán saber niveles de oxigenación, temperatura, peso, hidratación, actividad fisica minima, entre muchos más. Con esto los servicios médicos podran atacar de manera más eficiente a los problemas que se enfrenten y tendran todo un registro de datos validados y reales de sus pacientes.
 
-    const CONTRACT_NAME = process.env.CONTRACT_NAME || 'connectiot.YOUR-NAME.testnet'
-
-
-Step 3: deploy!
----------------
-
-One command:
-
-    yarn deploy
-
-As you can see in `package.json`, this does two things:
-
-1. builds & deploys smart contract to NEAR TestNet
-2. builds & deploys frontend code to GitHub using [gh-pages]. This will only work if the project already has a repository set up on GitHub. Feel free to modify the `deploy` script in `package.json` to deploy elsewhere.
-
-
-Troubleshooting
-===============
-
-On Windows, if you're seeing an error containing `EPERM` it may be related to spaces in your path. Please see [this issue](https://github.com/zkat/npx/issues/209) for more details.
-
-
-  [create-near-app]: https://github.com/near/create-near-app
-  [Node.js]: https://nodejs.org/en/download/package-manager/
-  [jest]: https://jestjs.io/
-  [NEAR accounts]: https://docs.near.org/docs/concepts/account
-  [NEAR Wallet]: https://wallet.testnet.near.org/
-  [near-cli]: https://github.com/near/near-cli
-  [gh-pages]: https://github.com/tschaub/gh-pages
+Los diseños de esta aplicación se pueden ver en el siguiente link: https://marvelapp.com/project/5880174
