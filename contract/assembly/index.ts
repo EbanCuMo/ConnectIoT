@@ -35,19 +35,19 @@ export function getState(deviceId: string, deviceType: string): string | null {
   if (deviceType == "HealthTracker") {
     var healthTracker = healthTrackerRegistry.get(deviceId);
     if (healthTracker == null || !healthTracker.hasAccess(accountId)) {
-      return null;
+      return "No device or not authorized";
     }
     return healthTracker.getArgs();
   } else if (deviceType == "Oximeter") {
     var oximeter = oximeterRegistry.get(deviceId);
     if (oximeter == null || !oximeter.hasAccess(accountId)) {
-      return null;
+      return "No device or not authorized";
     }
     return oximeter.getArgs();
   } else {
     var device = devicesRegistry.get(deviceId);
     if (device == null || !device.hasAccess(accountId)) {
-      return null;
+      return "No device or not authorized";
     }
     return device.getArgs();
   }
@@ -119,6 +119,7 @@ export function updateState(
     healthTracker.weight = args.get("weight");
     healthTracker.bodyFat = args.get("bodyFat");
     healthTracker.muscleMass = args.get("muscleMass");
+    healthTrackerRegistry.set(deviceId, healthTracker);
   } else if (deviceType == "Oximeter") {
     var oximeter = oximeterRegistry.get(deviceId);
     if (oximeter == null || !oximeter.hasAccess(accountId)) {
@@ -127,12 +128,14 @@ export function updateState(
     oximeter.timestamp = timestamp;
     oximeter.bpm = args.get("bpm");
     oximeter.spo2 = args.get("spo2");
+    oximeterRegistry.set(deviceId, oximeter);
   } else {
     var device = devicesRegistry.get(deviceId);
     if (device == null || !device.hasAccess(accountId)) {
       return null;
     }
     device.timestamp = timestamp;
+    devicesRegistry.set(deviceId, device);
   }
   return "Updated";
 }
@@ -140,7 +143,7 @@ export function updateState(
 /*
 * An user can request authorization on a device.
 */
-export function askForPermission(deviceId: string, deviceType: string): void {
+export function askForPermission(deviceId: string, deviceType: string): bool {
   const requesterId = Context.sender;
 
   logging.log(
@@ -149,22 +152,23 @@ export function askForPermission(deviceId: string, deviceType: string): void {
   if (deviceType == "HealthTracker") {
     var healthTracker = healthTrackerRegistry.get(deviceId);
     if (healthTracker == null || healthTracker.hasAccess(requesterId)) {
-      return;
+      return false;
     }
-    healthTracker.userRequests.add(requesterId);
+    healthTracker.addRequest(requesterId);
   } else if (deviceType == "Oximeter") {
     var oximeter = oximeterRegistry.get(deviceId);
     if (oximeter == null || oximeter.hasAccess(requesterId)) {
-      return;
+      return false;
     }
-    oximeter.userRequests.add(requesterId);
+    oximeter.addRequest(requesterId);
   } else {
     var device = devicesRegistry.get(deviceId);
     if (device == null || device.hasAccess(requesterId)) {
-      return;
+      return false;
     }
-    device.userRequests.add(requesterId);
+    device.addRequest(requesterId);
   }
+  return true;
 }
 
 /*

@@ -1,4 +1,4 @@
-import { PersistentUnorderedMap } from "near-sdk-as";
+import { PersistentSet, PersistentUnorderedMap } from "near-sdk-as";
 
 @nearBindgen
 export class Device {
@@ -6,8 +6,8 @@ export class Device {
     timestamp: string;
     ownerId: string;
     deviceType: string;
-    allowedUsers: Set<string>;
-    userRequests: Set<string>;
+    allowedUsers: PersistentSet<string>;
+    userRequests: PersistentSet<string>;
 
     constructor(
         _ownerId: string,
@@ -18,8 +18,8 @@ export class Device {
         this.deviceId = _deviceId;
         this.timestamp = _timestamp;
         this.deviceType = _deviceType;
-        this.allowedUsers = new Set<string>();
-        this.userRequests = new Set<string>();
+        this.allowedUsers = new PersistentSet<string>(this.deviceId + "A");
+        this.userRequests = new PersistentSet<string>(this.deviceId + "U");
     }
     getArgs(): string {
         return "{}";
@@ -33,6 +33,10 @@ export class Device {
         let array: Array<string> = this.userRequests.values();
         return array.join(",");
     }
+
+    addRequest(accountId: string): void {
+        this.userRequests.add(accountId);
+    }
 }
 
 @nearBindgen
@@ -41,8 +45,8 @@ export class HealthTracker {
     timestamp: string;
     ownerId: string;
     deviceType: string;
-    allowedUsers: Set<string>;
-    userRequests: Set<string>;
+    allowedUsers: PersistentSet<string>;
+    userRequests: PersistentSet<string>;
     height: i32;
     weight: i32;
     bodyFat: i32;
@@ -61,8 +65,8 @@ export class HealthTracker {
         this.deviceId = _deviceId;
         this.timestamp = _timestamp;
         this.deviceType = _deviceType;
-        this.allowedUsers = new Set<string>();
-        this.userRequests = new Set<string>();
+        this.allowedUsers = new PersistentSet<string>(this.deviceId + "A");
+        this.userRequests = new PersistentSet<string>(this.deviceId + "U");
         this.height = _height;
         this.weight = _weight;
         this.bodyFat = _bodyFat;
@@ -83,6 +87,10 @@ export class HealthTracker {
         let array: Array<string> = this.userRequests.values();
         return array.join(",");
     }
+
+    addRequest(accountId: string): void {
+        this.userRequests.add(accountId);
+    }
 }
 
 @nearBindgen
@@ -91,8 +99,8 @@ export class Oximeter {
     timestamp: string;
     ownerId: string;
     deviceType: string;
-    allowedUsers: Set<string>;
-    userRequests: Set<string>;
+    allowedUsers: PersistentSet<string>;
+    userRequests: PersistentSet<string>;
     bpm: i32;
     spo2: i32;
 
@@ -106,8 +114,8 @@ export class Oximeter {
         this.deviceId = _deviceId;
         this.timestamp = _timestamp;
         this.deviceType = _deviceType;
-        this.allowedUsers = new Set<string>();
-        this.userRequests = new Set<string>();
+        this.allowedUsers = new PersistentSet<string>(this.deviceId + "A");
+        this.userRequests = new PersistentSet<string>(this.deviceId + "U");
 
         this.bpm = _bpm;
         this.spo2 = _spo2;
@@ -124,6 +132,10 @@ export class Oximeter {
     getRequests(): string {
         let array: Array<string> = this.userRequests.values();
         return array.join(",");
+    }
+
+    addRequest(accountId: string): void {
+        this.userRequests.add(accountId);
     }
 }
 
