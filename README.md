@@ -4,14 +4,14 @@
 # ConnectIoT es un servicio que nos permite tener acceso, por medio de la blockchain ,a diferentes dispositivos IoT y monitorearlos de acuerdo a los datos que se de van tomando con el tiempo
 
 # ConnectIoT permite realizar las siguientes operaciones:
-   *_crear nuevos dispositivos 
-   *_cambiar argumentos de los dispositivos ya creados
-   *_ver el tipo de dispositivo
-   *_borrar dispositivos 
-   *_autenticar usuarios que quieran ingresar a los dispositivos
-   *_pedir permiso para entrar a un dispositivo
-   *_validar el tipo de dispositivo de acuerdo a los datos que arroja
-   *_ver las solicitudes de acceso
+   1. crear nuevos dispositivos 
+   2. cambiar argumentos de los dispositivos ya creados
+   3. ver el tipo de dispositivo
+   4. borrar dispositivos 
+   5. autenticar usuarios que quieran ingresar a los dispositivos
+   6. pedir permiso para entrar a un dispositivo
+   7. validar el tipo de dispositivo de acuerdo a los datos que arroja
+   8. ver las solicitudes de acceso
 
 #🏁Prerrequisitos
 1. node.js >=12 instalado (https://nodejs.org)
