@@ -6,24 +6,25 @@ import { Device, HealthTracker, Oximeter, devicesRegistry, oximeterRegistry, hea
 */
 export function validateData(deviceId: string, deviceType: string, jsonArgs: string): string | null {
   const accountId = Context.sender;
-  var targetDevice = deviceType == "HealthTracker"
-    ? healthTrackerRegistry.get(deviceId)
-    : deviceType == "Oximeter"
-      ? oximeterRegistry.get(deviceId)
-      : devicesRegistry.get(deviceId);
-
-  if (targetDevice == null) {
-    return null;
+  if (deviceType == "HealthTracker") {
+    var healthTracker = healthTrackerRegistry.get(deviceId);
+    if (healthTracker == null || !healthTracker.hasAccess(accountId)) {
+      return null;
+    }
+    return jsonArgs == healthTracker.getArgs() ? healthTracker.deviceType : null;
+  } else if (deviceType == "Oximeter") {
+    var oximeter = oximeterRegistry.get(deviceId);
+    if (oximeter == null || !oximeter.hasAccess(accountId)) {
+      return null;
+    }
+    return jsonArgs == oximeter.getArgs() ? oximeter.deviceType : null;
+  } else {
+    var device = devicesRegistry.get(deviceId);
+    if (device == null || !device.hasAccess(accountId)) {
+      return null;
+    }
+    return jsonArgs == device.getArgs() ? device.deviceType : null;
   }
-
-  var isAllowed: bool = targetDevice.allowedUsers.has(accountId) ||
-    accountId == targetDevice.ownerId;
-
-  if (!isAllowed) {
-    return null;
-  }
-
-  return jsonArgs == targetDevice.getArgs() ? targetDevice.deviceType : null;
 }
 
 /*
@@ -31,34 +32,25 @@ export function validateData(deviceId: string, deviceType: string, jsonArgs: str
 */
 export function getState(deviceId: string, deviceType: string): string | null {
   const accountId = Context.sender;
-  var targetDevice = deviceType == "HealthTracker"
-    ? healthTrackerRegistry.get(deviceId)
-    : deviceType == "Oximeter"
-      ? oximeterRegistry.get(deviceId)
-      : devicesRegistry.get(deviceId);
-
-  if (targetDevice == null) {
-    return "Device not found";
-  }
-
-  var isAllowed: bool = targetDevice.hasAccess(accountId);
-
-  if (!isAllowed) {
-    return "Unauthorized";
-  }
-
-  if (targetDevice.deviceType == "Oximeter") {
-    var oximeter = devicesRegistry.get(deviceId);
-    if (oximeter != null) {
-      return oximeter.getArgs();
+  if (deviceType == "HealthTracker") {
+    var healthTracker = healthTrackerRegistry.get(deviceId);
+    if (healthTracker == null || !healthTracker.hasAccess(accountId)) {
+      return null;
     }
-  } else if (targetDevice.deviceType == "HealthTracker") {
-    var healthTracker = devicesRegistry.get(deviceId);
-    if (healthTracker != null) {
-      return healthTracker.getArgs();
+    return healthTracker.getArgs();
+  } else if (deviceType == "Oximeter") {
+    var oximeter = oximeterRegistry.get(deviceId);
+    if (oximeter == null || !oximeter.hasAccess(accountId)) {
+      return null;
     }
+    return oximeter.getArgs();
+  } else {
+    var device = devicesRegistry.get(deviceId);
+    if (device == null || !device.hasAccess(accountId)) {
+      return null;
+    }
+    return device.getArgs();
   }
-  return targetDevice.getArgs();
 }
 
 /*
@@ -70,13 +62,11 @@ export function setState(
   deviceType: string,
   timestamp: string,
   args: Map<string, i32>): string | null {
-  var targetDevice = deviceType == "HealthTracker"
-    ? healthTrackerRegistry.get(deviceId)
-    : deviceType == "Oximeter"
-      ? oximeterRegistry.get(deviceId)
-      : devicesRegistry.get(deviceId);
+  var isRegistered: bool = healthTrackerRegistry.contains(deviceId)
+    || oximeterRegistry.contains(deviceId)
+    || devicesRegistry.contains(deviceId);
 
-  if (targetDevice != null) {
+  if (isRegistered) {
     return "Device already exists";
   }
 
@@ -119,38 +109,30 @@ export function updateState(
   timestamp: string,
   args: Map<string, i32>): string | null {
   const accountId = Context.sender;
-  var targetDevice = deviceType == "HealthTracker"
-    ? healthTrackerRegistry.get(deviceId)
-    : deviceType == "Oximeter"
-      ? oximeterRegistry.get(deviceId)
-      : devicesRegistry.get(deviceId);
-
-  if (targetDevice == null) {
-    return "Device not found";
-  }
-
-  if (accountId != targetDevice.ownerId) {
-    return "Unauthorized: " + "-" + accountId;
-  }
-
-  targetDevice.timestamp = timestamp;
-  if (targetDevice.deviceType == "Oximeter") {
-    var oximeter = oximeterRegistry.get(deviceId);
-    if (oximeter == null) {
-      return "Type Error";
-    }
-    oximeter.bpm = args.get("bpm");
-    oximeter.spo2 = args.get("spo2");
-  } else if (targetDevice.deviceType == "HealthTracker") {
+  if (deviceType == "HealthTracker") {
     var healthTracker = healthTrackerRegistry.get(deviceId);
-    if (healthTracker == null) {
-      return "Type Error";
+    if (healthTracker == null || healthTracker.ownerId != accountId) {
+      return null;
     }
+    healthTracker.timestamp = timestamp;
     healthTracker.height = args.get("height");
     healthTracker.weight = args.get("weight");
     healthTracker.bodyFat = args.get("bodyFat");
     healthTracker.muscleMass = args.get("muscleMass");
-
+  } else if (deviceType == "Oximeter") {
+    var oximeter = oximeterRegistry.get(deviceId);
+    if (oximeter == null || !oximeter.hasAccess(accountId)) {
+      return null;
+    }
+    oximeter.timestamp = timestamp;
+    oximeter.bpm = args.get("bpm");
+    oximeter.spo2 = args.get("spo2");
+  } else {
+    var device = devicesRegistry.get(deviceId);
+    if (device == null || !device.hasAccess(accountId)) {
+      return null;
+    }
+    device.timestamp = timestamp;
   }
   return "Updated";
 }
@@ -164,40 +146,54 @@ export function askForPermission(deviceId: string, deviceType: string): void {
   logging.log(
     'User: "' + requesterId + '" asking for permission to "' + deviceId + '"'
   )
-
-  var targetDevice = deviceType == "HealthTracker"
-    ? healthTrackerRegistry.get(deviceId)
-    : deviceType == "Oximeter"
-      ? oximeterRegistry.get(deviceId)
-      : devicesRegistry.get(deviceId);
-  if (targetDevice == null) {
-    return;
+  if (deviceType == "HealthTracker") {
+    var healthTracker = healthTrackerRegistry.get(deviceId);
+    if (healthTracker == null || healthTracker.hasAccess(requesterId)) {
+      return;
+    }
+    healthTracker.userRequests.add(requesterId);
+  } else if (deviceType == "Oximeter") {
+    var oximeter = oximeterRegistry.get(deviceId);
+    if (oximeter == null || oximeter.hasAccess(requesterId)) {
+      return;
+    }
+    oximeter.userRequests.add(requesterId);
+  } else {
+    var device = devicesRegistry.get(deviceId);
+    if (device == null || device.hasAccess(requesterId)) {
+      return;
+    }
+    device.userRequests.add(requesterId);
   }
-
-  targetDevice.userRequests.add(requesterId);
 }
 
 /*
 * The device owner can authorise a user on a device
 */
 export function authenticate(deviceId: string, deviceType: string, accountId: string): bool {
-  var targetDevice = deviceType == "HealthTracker"
-    ? healthTrackerRegistry.get(deviceId)
-    : deviceType == "Oximeter"
-      ? oximeterRegistry.get(deviceId)
-      : devicesRegistry.get(deviceId);
   const currentUser = Context.sender;
-
-  if (targetDevice == null || currentUser != targetDevice.ownerId) {
-    return false;
+  if (deviceType == "HealthTracker") {
+    var healthTracker = healthTrackerRegistry.get(deviceId);
+    if (healthTracker == null || currentUser != healthTracker.ownerId) {
+      return false;
+    }
+    healthTracker.allowedUsers.add(accountId);
+    healthTracker.userRequests.delete(accountId);
+  } else if (deviceType == "Oximeter") {
+    var oximeter = oximeterRegistry.get(deviceId);
+    if (oximeter == null || currentUser != oximeter.ownerId) {
+      return false;
+    }
+    oximeter.allowedUsers.add(accountId);
+    oximeter.userRequests.delete(accountId);
+  } else {
+    var device = devicesRegistry.get(deviceId);
+    if (device == null || currentUser != device.ownerId) {
+      return false;
+    }
+    device.allowedUsers.add(accountId);
+    device.userRequests.delete(accountId);
   }
-
-  if (!targetDevice.userRequests.has(accountId)) {
-    return false;
-  }
-
-  targetDevice.allowedUsers.add(accountId);
-  targetDevice.userRequests.delete(accountId);
   return true;
 }
 
@@ -206,21 +202,50 @@ export function authenticate(deviceId: string, deviceType: string, accountId: st
 */
 export function deleteDevice(deviceId: string, deviceType: string): bool {
   const accountId = Context.sender;
-  var targetDevice = deviceType == "HealthTracker"
-    ? healthTrackerRegistry.get(deviceId)
-    : deviceType == "Oximeter"
-      ? oximeterRegistry.get(deviceId)
-      : devicesRegistry.get(deviceId);
-
-  if (targetDevice == null) {
-    return false;
+  if (deviceType == "HealthTracker") {
+    var healthTracker = healthTrackerRegistry.get(deviceId);
+    if (healthTracker == null || accountId != healthTracker.ownerId) {
+      return false;
+    }
+    healthTrackerRegistry.delete(deviceId);
+  } else if (deviceType == "Oximeter") {
+    var oximeter = oximeterRegistry.get(deviceId);
+    if (oximeter == null || accountId != oximeter.ownerId) {
+      return false;
+    }
+    oximeterRegistry.delete(deviceId);
+  } else {
+    var device = devicesRegistry.get(deviceId);
+    if (device == null || accountId != device.ownerId) {
+      return false;
+    }
+    devicesRegistry.delete(deviceId);
   }
-
-  if (accountId != targetDevice.ownerId) {
-    return false;
-  }
-
-  storage.delete(deviceId);
-
   return true;
+}
+
+/*
+* Get the list of user requests on a device as string
+*/
+export function getRequests(deviceId: string, deviceType: string): string | null {
+  const accountId = Context.sender;
+  if (deviceType == "HealthTracker") {
+    var healthTracker = healthTrackerRegistry.get(deviceId);
+    if (healthTracker == null || accountId != healthTracker.ownerId) {
+      return null;
+    }
+    return healthTracker.getRequests();
+  } else if (deviceType == "Oximeter") {
+    var oximeter = oximeterRegistry.get(deviceId);
+    if (oximeter == null || accountId != oximeter.ownerId) {
+      return null;
+    }
+    return oximeter.getRequests();
+  } else {
+    var device = devicesRegistry.get(deviceId);
+    if (device == null || accountId != device.ownerId) {
+      return null;
+    }
+    return device.getRequests();
+  }
 }

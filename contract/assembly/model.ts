@@ -1,4 +1,4 @@
-import { PersistentSet, PersistentUnorderedMap } from "near-sdk-as";
+import { PersistentUnorderedMap } from "near-sdk-as";
 
 @nearBindgen
 export class Device {
@@ -6,8 +6,8 @@ export class Device {
     timestamp: string;
     ownerId: string;
     deviceType: string;
-    allowedUsers: PersistentSet<string>;
-    userRequests: PersistentSet<string>;
+    allowedUsers: Set<string>;
+    userRequests: Set<string>;
 
     constructor(
         _ownerId: string,
@@ -18,8 +18,8 @@ export class Device {
         this.deviceId = _deviceId;
         this.timestamp = _timestamp;
         this.deviceType = _deviceType;
-        this.allowedUsers = new PersistentSet<string>("a");
-        this.userRequests = new PersistentSet<string>("r");
+        this.allowedUsers = new Set<string>();
+        this.userRequests = new Set<string>();
     }
     getArgs(): string {
         return "{}";
@@ -28,10 +28,21 @@ export class Device {
     hasAccess(accountId: string): bool {
         return this.allowedUsers.has(accountId) || accountId == this.ownerId;
     }
+
+    getRequests(): string {
+        let array: Array<string> = this.userRequests.values();
+        return array.join(",");
+    }
 }
 
 @nearBindgen
-export class HealthTracker extends Device {
+export class HealthTracker {
+    deviceId: string;
+    timestamp: string;
+    ownerId: string;
+    deviceType: string;
+    allowedUsers: Set<string>;
+    userRequests: Set<string>;
     height: i32;
     weight: i32;
     bodyFat: i32;
@@ -46,10 +57,12 @@ export class HealthTracker extends Device {
         _weight: i32,
         _bodyFat: i32,
         _muscleMass: i32) {
-        super(_ownerId,
-            _deviceId,
-            _deviceType,
-            _timestamp);
+        this.ownerId = _ownerId;
+        this.deviceId = _deviceId;
+        this.timestamp = _timestamp;
+        this.deviceType = _deviceType;
+        this.allowedUsers = new Set<string>();
+        this.userRequests = new Set<string>();
         this.height = _height;
         this.weight = _weight;
         this.bodyFat = _bodyFat;
@@ -61,10 +74,25 @@ export class HealthTracker extends Device {
             + this.weight.toString() + ",bodyFat:" + this.bodyFat.toString()
             + ",muscleMass:" + this.muscleMass.toString() + "}";
     }
+
+    hasAccess(accountId: string): bool {
+        return this.allowedUsers.has(accountId) || accountId == this.ownerId;
+    }
+
+    getRequests(): string {
+        let array: Array<string> = this.userRequests.values();
+        return array.join(",");
+    }
 }
 
 @nearBindgen
-export class Oximeter extends Device {
+export class Oximeter {
+    deviceId: string;
+    timestamp: string;
+    ownerId: string;
+    deviceType: string;
+    allowedUsers: Set<string>;
+    userRequests: Set<string>;
     bpm: i32;
     spo2: i32;
 
@@ -74,10 +102,12 @@ export class Oximeter extends Device {
         _timestamp: string,
         _bpm: i32,
         _spo2: i32) {
-        super(_ownerId,
-            _deviceId,
-            _deviceType,
-            _timestamp);
+        this.ownerId = _ownerId;
+        this.deviceId = _deviceId;
+        this.timestamp = _timestamp;
+        this.deviceType = _deviceType;
+        this.allowedUsers = new Set<string>();
+        this.userRequests = new Set<string>();
 
         this.bpm = _bpm;
         this.spo2 = _spo2;
@@ -85,6 +115,15 @@ export class Oximeter extends Device {
 
     getArgs(): string {
         return "{bpm:" + this.bpm.toString() + ",spo2:" + this.spo2.toString() + "}";
+    }
+
+    hasAccess(accountId: string): bool {
+        return this.allowedUsers.has(accountId) || accountId == this.ownerId;
+    }
+
+    getRequests(): string {
+        let array: Array<string> = this.userRequests.values();
+        return array.join(",");
     }
 }
 
